@@ -1,22 +1,14 @@
-# Use the official .NET SDK image for building the application
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-WORKDIR /src
-
-# Copy the source code
+# Place this file at src/Dockerfile in your fork of SoDOff.
+# Build with the repository root as the Docker build context.
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /source
 COPY . .
-
-# Restore dependencies and build the application
-RUN dotnet build -c Release -o /app
-
-# move mods and assets directors from sources to /app
-RUN mv src/mods /app && ln -s /app/mods src/
-RUN mv src/assets /app && ln -s /app/assets src/
-
-# Create clean run environment (without source and sdk)
-# FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
-# WORKDIR /app
-# COPY --from=build /app .
-
-# Run the application
+RUN dotnet publish src/sodoff.csproj -c Release -o /publish --no-self-contained
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
-ENTRYPOINT ["./sodoff"]
+COPY --from=build /publish/ ./
+COPY --from=build /source/src/assets/ ./assets/
+COPY --from=build /source/src/mods/ ./mods/
+EXPOSE 5000 5001
+ENTRYPOINT ["dotnet", "sodoff.dll"]
+
